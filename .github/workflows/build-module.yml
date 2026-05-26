@@ -62,7 +62,7 @@ jobs:
           ls -lh ./hideSceneport_module.zip
 
       - name: Upload module zip
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ScenePortHider_Release
           path: hideSceneport_module.zip
