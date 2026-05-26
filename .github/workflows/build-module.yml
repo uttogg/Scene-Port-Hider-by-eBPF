@@ -56,9 +56,38 @@ jobs:
         run: |
           bash tools/build_from_btf.sh
 
-      - name: Stage module zip
+      - name: Verify and fix module zip
         run: |
-          cp ../hideSceneport_module.zip ./hideSceneport_module.zip
+          # Check if zip exists at expected location
+          if [ -f "../hideSceneport_module.zip" ]; then
+            echo "Found zip at ../hideSceneport_module.zip"
+            cp ../hideSceneport_module.zip ./hideSceneport_module.zip
+          elif [ -f "hideSceneport_module.zip" ]; then
+            echo "Found zip at ./hideSceneport_module.zip"
+          else
+            echo "Error: Module zip not found!"
+            exit 1
+          fi
+          # Verify zip contents
+          echo "Zip contents:"
+          unzip -l hideSceneport_module.zip
+          # Check if module.prop exists at root level
+          if ! unzip -l hideSceneport_module.zip | grep -q "module.prop"; then
+            echo "Warning: module.prop not found at root level, fixing zip structure..."
+            # Extract and repackage with correct structure
+            mkdir -p /tmp/module_fix
+            cd /tmp/module_fix
+            unzip -o "$OLDPWD/hideSceneport_module.zip"
+            # Find and move files to correct location if nested
+            if [ -d "Scene-Port-Hider-by-eBPF-main" ]; then
+              mv Scene-Port-Hider-by-eBPF-main/* .
+              rm -rf Scene-Port-Hider-by-eBPF-main
+            fi
+            # Repackage
+            rm -f "$OLDPWD/hideSceneport_module.zip"
+            zip -r "$OLDPWD/hideSceneport_module.zip" . -x '*/.git/*'
+            cd "$OLDPWD"
+          fi
           ls -lh ./hideSceneport_module.zip
 
       - name: Upload module zip
